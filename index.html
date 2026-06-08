@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Leave Manager | Month‑wise HR Reports</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', sans-serif;
+        }
+        body {
+            background: #eef2ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            padding: 2rem;
+            transition: all 0.2s;
+        }
+        .login-card {
+            max-width: 500px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e293b, #2d3a5e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 1.2rem;
+        }
+        .input-group {
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.4rem;
+            color: #1e293b;
+        }
+        select, input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 60px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background: #2563eb;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button.secondary {
+            background: #475569;
+        }
+        button.admin-btn {
+            background: #7c3aed;
+            margin-top: 0.8rem;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .balance-row {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+        .balance-card {
+            flex: 1;
+            background: #f8fafc;
+            border-radius: 1.2rem;
+            padding: 1rem 1.2rem;
+            border-left: 6px solid;
+        }
+        .balance-card.pl { border-left-color: #3b82f6; background: #eff6ff; }
+        .balance-card.cl { border-left-color: #10b981; background: #ecfdf5; }
+        .balance-number { font-size: 2rem; font-weight: 800; }
+        .form-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            margin: 1rem 0;
+        }
+        .form-group { flex:1; min-width:160px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td { padding: 0.7rem 0.4rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .leave-badge { background: #e2e8f0; border-radius: 40px; padding: 0.2rem 0.8rem; font-size: 0.7rem; font-weight: 600; }
+        .leave-badge.pl { background: #dbeafe; color: #1e40af; }
+        .leave-badge.cl { background: #d1fae5; color: #065f46; }
+        .delete-btn { background: none; color: #94a3b8; padding: 0.2rem 0.6rem; }
+        .delete-btn:hover { color: #dc2626; }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 1rem;
+        }
+        .cal-day {
+            background: white;
+            border-radius: 40px;
+            padding: 0.6rem 0.2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            border: 1px solid #eef2ff;
+        }
+        .cal-day.leave-pl { background: #dbeafe; border-color: #3b82f6; font-weight: 600; }
+        .cal-day.leave-cl { background: #d1fae5; border-color: #10b981; }
+        .cal-weekday { font-weight: 700; font-size: 0.7rem; text-align: center; padding: 0.5rem; color: #334155; }
+        .msg { margin-top: 0.8rem; padding: 0.5rem; border-radius: 60px; background: #f1f5f9; font-size: 0.8rem; }
+        footer { text-align: center; margin-top: 2rem; font-size: 0.7rem; color: #475569; }
+        @media (max-width: 700px) { .card { padding: 1rem; } }
+    </style>
+</head>
+<body>
+<div class="container" id="appRoot">
+    <!-- Login View -->
+    <div id="loginView">
+        <div class="login-card card">
+            <i class="fas fa-user-lock" style="font-size: 2.5rem; color: #2563eb;"></i>
+            <h2>Employee / HR Portal</h2>
+            <div class="input-group">
+                <label>👤 Select Employee</label>
+                <select id="loginEmployeeSelect"></select>
+            </div>
+            <div class="input-group">
+                <label>🔐 Employee Code (Credential)</label>
+                <input type="text" id="loginCodeInput" placeholder="Enter employee code">
+                <small id="codeHint" style="color:#64748b; display:block; margin-top:4px;"></small>
+            </div>
+            <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Access my leaves</button>
+            <hr style="margin: 1rem 0;">
+            <button id="hrAdminBtn" class="admin-btn"><i class="fas fa-chart-line"></i> HR Admin – Download Month‑wise Report</button>
+        </div>
+    </div>
+
+    <!-- Employee Dashboard -->
+    <div id="dashboardView" style="display: none;">
+        <div class="card">
+            <div class="flex-between">
+                <div><h2><i class="fas fa-leaf"></i> My Leave Manager</h2><p id="empGreeting"></p></div>
+                <button id="logoutBtn" class="secondary"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            <div class="balance-row" id="balancePanel"></div>
+            <div style="background:#fafcff; border-radius:1.2rem; padding:1rem; margin:1rem 0;">
+                <h3><i class="fas fa-calendar-plus"></i> Apply for Leave</h3>
+                <div class="form-inline">
+                    <div class="form-group"><label>Date</label><input type="date" id="leaveDate"></div>
+                    <div class="form-group"><label>Type</label><select id="leaveType"><option value="PL">📘 PL</option><option value="CL">🌿 CL</option></select></div>
+                    <button id="applyLeaveBtn"><i class="fas fa-check"></i> Apply</button>
+                </div>
+            </div>
+            <div class="flex-between"><h3><i class="fas fa-history"></i> My Leave History</h3><div><button id="exportExcelBtn" style="background:#0f3b2c;"><i class="fas fa-file-excel"></i> Export My Excel</button><label for="importExcelInput" style="background:#4b5563; padding:0.6rem 1rem; border-radius:60px; cursor:pointer; margin-left:0.5rem;"><i class="fas fa-upload"></i> Import Excel</label><input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;"></div></div>
+            <div style="overflow-x:auto;"><table id="leaveHistoryTable"><thead><tr><th>Date</th><th>Type</th><th>Action</th></tr></thead><tbody id="historyBody"><tr><td colspan="3">Loading...</td></tr></tbody>}</table></div>
+            <div style="margin-top:2rem;"><div class="flex-between"><h3><i class="fas fa-calendar-alt"></i> Leave Calendar</h3><div><button id="prevMonthBtn"><i class="fas fa-chevron-left"></i> Prev</button><span id="monthYearLabel" style="margin:0 1rem; font-weight:600;"></span><button id="nextMonthBtn">Next <i class="fas fa-chevron-right"></i></button></div></div><div id="calendarGrid" class="calendar-grid"></div><div class="legend" style="display:flex; gap:1rem; margin-top:0.6rem; font-size:0.7rem;"><span><span style="background:#dbeafe; padding:2px 8px; border-radius:30px;">PL</span></span><span><span style="background:#d1fae5; padding:2px 8px; border-radius:30px;">CL</span></span></div></div>
+            <div id="dashboardMsg" class="msg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- Employee Data (from original excel) ----------
+    const employeesData = [
+        { name: "DEEPANSHU", dept: "CHEFS", code: "TN020" },
+        { name: "ANSHUL", dept: "CHEFS", code: "TN014" },
+        { name: "VIDUSHI", dept: "CHEFS", code: "TN009" },
+        { name: "NANDINI", dept: "CHEFS", code: "TN007" },
+        { name: "REEMA", dept: "CHEFS", code: "TN027" },
+        { name: "HIMANI", dept: "CHEFS", code: "TN016" },
+        { name: "SHAIBA", dept: "CHEFS", code: "TN026" },
+        { name: "FAIZ", dept: "CHEFS", code: "TN012" },
+        { name: "SHREYA", dept: "CHEFS", code: "" },
+        { name: "NITIKA PATHAK", dept: "SALES", code: "TN011" },
+        { name: "PRASHANSA", dept: "SALES", code: "TN031" },
+        { name: "MUSKAN", dept: "SALES", code: "TN029" },
+        { name: "PRAGYASINI", dept: "HR", code: "TN032" },
+        { name: "OM", dept: "CREATIVE", code: "TN018" },
+        { name: "JAGJEET SINGH", dept: "CREATIVE", code: "TN035" },
+        { name: "DEEPAK", dept: "CREATIVE", code: "TN037" },
+        { name: "SWATI", dept: "INVENTORY", code: "TN038" },
+        { name: "MEEKA", dept: "ACCOUNTS", code: "TN001" },
+        { name: "RIYA KHAN (Probation)", dept: "SALES", code: "TN046" },
+        { name: "INSHIRAH SIDDIQUI", dept: "CHEFS (INTERN)", code: "TN044" },
+        { name: "AISHWERYA KANSAL (probation)", dept: "CHEFS", code: "" },
+        { name: "BABLI", dept: "HELPER", code: "TN004" },
+        { name: "SHABANA", dept: "HELPER", code: "TN006" },
+        { name: "ANITA", dept: "HELPER", code: "TN005" },
+        { name: "RAJNI", dept: "HELPER", code: "TN010" },
+        { name: "SANGEETA", dept: "HELPER", code: "TN039" },
+        { name: "KISHORI", dept: "HELPER", code: "TN040" },
+        { name: "MEENU", dept: "HELPER", code: "" },
+        { name: "ARUNA", dept: "CHEFS", code: "" }
+    ];
+
+    function getEffectiveAuthCode(emp) {
+        if (emp.code && emp.code.trim() !== "") return emp.code.trim().toUpperCase();
+        return "EMP_" + emp.name.toUpperCase().replace(/\s+/g, '');
+    }
+
+    function getEmployeeByCodeAndName(empName, enteredCode) {
+        const emp = employeesData.find(e => e.name === empName);
+        if (!emp) return null;
+        const validCode = getEffectiveAuthCode(emp);
+        return validCode === enteredCode.trim().toUpperCase() ? emp : null;
+    }
+
+    // ----- Leave Storage (per employee) -----
+    const ANNUAL_PL = 15, ANNUAL_CL = 15;
+    function getStorageKey(empCode) { return `leave_system_${empCode}`; }
+    function getLeavesForEmployee(empCode) { return JSON.parse(localStorage.getItem(getStorageKey(empCode)) || "[]"); }
+    function saveLeavesForEmployee(empCode, leaves) { localStorage.setItem(getStorageKey(empCode), JSON.stringify(leaves)); }
+    function getLeaveStats(leaves) {
+        let usedPL = leaves.filter(l=>l.type==='PL').length;
+        let usedCL = leaves.filter(l=>l.type==='CL').length;
+        return { usedPL, usedCL, remainingPL: ANNUAL_PL - usedPL, remainingCL: ANNUAL_CL - usedCL };
+    }
+    function addLeaveForEmployee(empCode, date, type, existingLeaves) {
+        if (!date) return { success: false, msg: "Select date." };
+        if (existingLeaves.find(l=>l.date===date)) return { success: false, msg: "Leave exists on this date." };
+        const stats = getLeaveStats(existingLeaves);
+        if (type==='PL' && stats.remainingPL<=0) return { success: false, msg: "No PL balance left." };
+        if (type==='CL' && stats.remainingCL<=0) return { success: false, msg: "No CL balance left." };
+        const newLeaves = [...existingLeaves, { date, type }];
+        saveLeavesForEmployee(empCode, newLeaves);
+        return { success: true, msg: `${type} added for ${date}.`, newLeaves };
+    }
+    function deleteLeaveForEmployee(empCode, date, type, existingLeaves) {
+        const filtered = existingLeaves.filter(l=>!(l.date===date && l.type===type));
+        if(filtered.length===existingLeaves.length) return false;
+        saveLeavesForEmployee(empCode, filtered);
+        return true;
+    }
+
+    // ----- HR Consolidated Export: Month-wise sheets -----
+    function getWorkingDays(empName) {
+        const lower = empName.toLowerCase();
+        if (lower.includes("probation")) return 17;
+        if (lower.includes("intern")) return 24;
+        return 26;
+    }
+
+    function generateMonthWiseExcel() {
+        // Collect all leaves across employees, group by month (YYYY-MM)
+        const monthData = new Map(); // key: "YYYY-MM" (e.g., "2026-05") -> array of rows for that month
+        for (let emp of employeesData) {
+            const empCode = getEffectiveAuthCode(emp);
+            const leaves = getLeavesForEmployee(empCode);
+            // Group leaves by month for this employee
+            const leavesByMonth = new Map();
+            for (let l of leaves) {
+                const monthKey = l.date.substring(0,7); // "YYYY-MM"
+                if (!leavesByMonth.has(monthKey)) leavesByMonth.set(monthKey, []);
+                leavesByMonth.get(monthKey).push(l);
+            }
+            // For each month that this employee has leaves, add a row to that month's sheet
+            for (let [monthKey, monthLeaves] of leavesByMonth.entries()) {
+                const plCount = monthLeaves.filter(l=>l.type==='PL').length;
+                const clCount = monthLeaves.filter(l=>l.type==='CL').length;
+                const totalOffs = plCount + clCount;
+                const workingDays = getWorkingDays(emp.name);
+                const attendedDays = workingDays - totalOffs;
+                const row = {
+                    "EMPLOYEE": emp.name,
+                    "DEPARTMENT": emp.dept,
+                    "EMPLOYEE CODE": emp.code || "",
+                    "TOTAL WORKING DAYS (26)": workingDays,
+                    "ATTENDED DAYS": attendedDays,
+                    "TOTAL OFFS": totalOffs,
+                    "LATE": 0,
+                    "CL": clCount,
+                    "PL": plCount
+                };
+                if (!monthData.has(monthKey)) monthData.set(monthKey, []);
+                monthData.get(monthKey).push(row);
+            }
+        }
+        // Also include months where some employees have zero leaves? We'll only include months with at least one leave record.
+        if (monthData.size === 0) {
+            alert("No leave records found. Cannot generate report.");
+            return;
+        }
+        // Sort months chronologically
+        const sortedMonths = Array.from(monthData.keys()).sort();
+        const workbook = XLSX.utils.book_new();
+        for (let monthKey of sortedMonths) {
+            const rows = monthData.get(monthKey);
+            // Sort rows by employee name for consistency
+            rows.sort((a,b)=>a.EMPLOYEE.localeCompare(b.EMPLOYEE));
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = [{wch:20},{wch:15},{wch:15},{wch:18},{wch:14},{wch:12},{wch:8},{wch:6},{wch:6}];
+            // Sheet name: "May 2026", "Jun 2026", etc.
+            const [year, month] = monthKey.split('-');
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const sheetName = `${monthNames[parseInt(month)-1]} ${year}`;
+            XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+        }
+        XLSX.writeFile(workbook, `Attendance_Summary_MonthWise_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    // ----- HR Admin password prompt -----
+    function promptHrAdmin() {
+        const pwd = prompt("Enter HR Admin Password:", "");
+        if (pwd === "HR@2026") {
+            generateMonthWiseExcel();
+        } else {
+            alert("Incorrect HR password. Access denied.");
+        }
+    }
+
+    // ----- Employee UI state -----
+    let currentEmp = null, currentEmpCode = null, currentLeaves = [];
+    let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
+
+    const loginViewDiv = document.getElementById('loginView');
+    const dashboardViewDiv = document.getElementById('dashboardView');
+    const loginEmployeeSelect = document.getElementById('loginEmployeeSelect');
+    const loginCodeInput = document.getElementById('loginCodeInput');
+    const codeHint = document.getElementById('codeHint');
+    const loginBtn = document.getElementById('loginBtn');
+    const hrAdminBtn = document.getElementById('hrAdminBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const empGreeting = document.getElementById('empGreeting');
+    const balancePanel = document.getElementById('balancePanel');
+    const leaveDate = document.getElementById('leaveDate');
+    const leaveType = document.getElementById('leaveType');
+    const applyLeaveBtn = document.getElementById('applyLeaveBtn');
+    const historyBody = document.getElementById('historyBody');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const importExcelInput = document.getElementById('importExcelInput');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const monthYearLabel = document.getElementById('monthYearLabel');
+    const calendarGrid = document.getElementById('calendarGrid');
+    const dashboardMsg = document.getElementById('dashboardMsg');
+
+    function populateLoginDropdown() {
+        loginEmployeeSelect.innerHTML = '';
+        employeesData.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.name;
+            opt.textContent = `${emp.name} (${emp.dept})`;
+            loginEmployeeSelect.appendChild(opt);
+        });
+        updateCodeHint();
+    }
+    function updateCodeHint() {
+        const selected = loginEmployeeSelect.value;
+        const emp = employeesData.find(e=>e.name===selected);
+        if(emp) codeHint.innerHTML = `🔑 Required code: ${getEffectiveAuthCode(emp)}`;
+        else codeHint.innerHTML = "Enter employee code";
+    }
+    function handleLogin() {
+        const selectedName = loginEmployeeSelect.value;
+        const enteredCode = loginCodeInput.value.trim();
+        const emp = getEmployeeByCodeAndName(selectedName, enteredCode);
+        if(!emp) { alert("Invalid employee code."); return; }
+        currentEmp = emp;
+        currentEmpCode = getEffectiveAuthCode(emp);
+        currentLeaves = getLeavesForEmployee(currentEmpCode);
+        calendarYear = new Date().getFullYear();
+        calendarMonth = new Date().getMonth();
+        renderDashboard();
+        loginViewDiv.style.display = 'none';
+        dashboardViewDiv.style.display = 'block';
+        showDashboardMsg(`Welcome ${emp.name} (${emp.dept})`, "green");
+    }
+    function logout() {
+        loginViewDiv.style.display = 'block';
+        dashboardViewDiv.style.display = 'none';
+        currentEmp = null;
+        loginCodeInput.value = '';
+        updateCodeHint();
+    }
+    function showDashboardMsg(msg, color="#2563eb") {
+        dashboardMsg.innerHTML = `<i class="fas fa-info-circle"></i> ${msg}`;
+        setTimeout(()=>{ if(dashboardMsg) dashboardMsg.innerHTML=''; }, 3000);
+    }
+    function renderBalances() {
+        const stats = getLeaveStats(currentLeaves);
+        balancePanel.innerHTML = `<div class="balance-card pl"><div class="balance-title">📘 PL</div><div class="balance-number">${stats.remainingPL}/${ANNUAL_PL}</div><div>Used: ${stats.usedPL}</div></div><div class="balance-card cl"><div class="balance-title">🌿 CL</div><div class="balance-number">${stats.remainingCL}/${ANNUAL_CL}</div><div>Used: ${stats.usedCL}</div></div>`;
+    }
+    function renderHistory() {
+        if(!currentLeaves.length) { historyBody.innerHTML='<tr><td colspan="3">No leaves recorded.</td></tr>'; return; }
+        const sorted = [...currentLeaves].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        historyBody.innerHTML = sorted.map(l=>{
+            const fmt = new Date(l.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+            return `<tr><td>${fmt}</td><td><span class="leave-badge ${l.type==='PL'?'pl':'cl'}">${l.type}</span></td><td><button class="delete-btn" data-date="${l.date}" data-type="${l.type}"><i class="fas fa-trash-alt"></i> Delete</button></td></tr>`;
+        }).join('');
+        document.querySelectorAll('.delete-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+                const date=btn.dataset.date, type=btn.dataset.type;
+                if(confirm(`Delete ${type} on ${date}?`)){
+                    if(deleteLeaveForEmployee(currentEmpCode,date,type,currentLeaves)){
+                        currentLeaves=getLeavesForEmployee(currentEmpCode);
+                        refreshAll();
+                        showDashboardMsg(`Removed ${type} on ${date}`);
+                    }
+                }
+            });
+        });
+    }
+    function renderCalendar(){
+        const year=calendarYear, month=calendarMonth;
+        const firstDay=new Date(year,month,1);
+        let startWeekday=firstDay.getDay()===0?6:firstDay.getDay()-1;
+        const daysInMonth=new Date(year,month+1,0).getDate();
+        const leaveMap=new Map(); currentLeaves.forEach(l=>leaveMap.set(l.date,l.type));
+        let grid=''; const weekdays=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        weekdays.forEach(d=>grid+=`<div class="cal-weekday">${d}</div>`);
+        for(let i=0;i<startWeekday;i++) grid+=`<div class="cal-day other-month"></div>`;
+        for(let d=1;d<=daysInMonth;d++){
+            const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const lt=leaveMap.get(ds);
+            let cls="cal-day"; if(lt==='PL') cls+=" leave-pl"; if(lt==='CL') cls+=" leave-cl";
+            let icon=lt==='PL'?'📘':(lt==='CL'?'🌿':'');
+            grid+=`<div class="${cls}">${d}<br><span style="font-size:9px;">${icon}</span></div>`;
+        }
+        const rem=42-(startWeekday+daysInMonth);
+        for(let i=0;i<rem;i++) grid+=`<div class="cal-day other-month"></div>`;
+        calendarGrid.innerHTML=grid;
+        const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        monthYearLabel.innerText=`${months[month]} ${year}`;
+    }
+    function refreshAll(){ renderBalances(); renderHistory(); renderCalendar(); empGreeting.innerText=`${currentEmp.name} · ${currentEmp.dept} · Code: ${currentEmpCode}`; }
+    function handleApplyLeave(){
+        const date=leaveDate.value, type=leaveType.value;
+        const res=addLeaveForEmployee(currentEmpCode,date,type,currentLeaves);
+        if(res.success){ currentLeaves=res.newLeaves; refreshAll(); leaveDate.value=""; showDashboardMsg(res.msg); }
+        else showDashboardMsg(res.msg,"#b91c1c");
+    }
+    function exportMyExcel(){
+        if(!currentLeaves.length){ alert("No leaves to export."); return; }
+        const data=currentLeaves.map(l=>({Date:l.date,"Leave Type":l.type,Employee:currentEmp.name,Code:currentEmpCode}));
+        const ws=XLSX.utils.json_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"MyLeaves");
+        XLSX.writeFile(wb,`Leave_${currentEmp.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        showDashboardMsg("Your leave history exported.");
+    }
+    function importExcel(file){
+        const reader=new FileReader();
+        reader.onload=function(e){
+            const data=new Uint8Array(e.target.result);
+            const wb=XLSX.read(data,{type:'array'});
+            const sheet=wb.Sheets[wb.SheetNames[0]];
+            const rows=XLSX.utils.sheet_to_json(sheet);
+            if(!rows.length){ alert("Empty file"); return; }
+            let added=0,skipped=0;
+            let updated=[...currentLeaves];
+            for(let row of rows){
+                let date=row.Date||row.date; let type=row["Leave Type"]||row.type||row.Type;
+                if(!date||!type) continue;
+                date=new Date(date).toISOString().slice(0,10);
+                type=type.toString().toUpperCase();
+                if(type!=='PL'&&type!=='CL') continue;
+                if(updated.some(l=>l.date===date)){ skipped++; continue; }
+                const stats=getLeaveStats(updated);
+                if((type==='PL'&&stats.remainingPL<=0)||(type==='CL'&&stats.remainingCL<=0)){ skipped++; continue; }
+                updated.push({date,type}); added++;
+            }
+            if(added){ saveLeavesForEmployee(currentEmpCode,updated); currentLeaves=updated; refreshAll(); showDashboardMsg(`Imported ${added} new leaves. Skipped ${skipped}.`); }
+            else showDashboardMsg(`No new leaves added. ${skipped} duplicates/quota full.`,"orange");
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    function attachEvents(){
+        applyLeaveBtn.onclick=handleApplyLeave;
+        exportExcelBtn.onclick=exportMyExcel;
+        importExcelInput.onchange=e=>{ if(e.target.files[0]) importExcel(e.target.files[0]); e.target.value=''; };
+        prevMonthBtn.onclick=()=>{ let nm=calendarMonth-1, ny=calendarYear; if(nm<0){nm=11;ny--;} calendarMonth=nm; calendarYear=ny; renderCalendar(); };
+        nextMonthBtn.onclick=()=>{ let nm=calendarMonth+1, ny=calendarYear; if(nm>11){nm=0;ny++;} calendarMonth=nm; calendarYear=ny; renderCalendar(); };
+        logoutBtn.onclick=logout;
+    }
+    function renderDashboard(){ refreshAll(); attachEvents(); }
+
+    // Initialization
+    populateLoginDropdown();
+    loginEmployeeSelect.addEventListener('change', updateCodeHint);
+    loginBtn.addEventListener('click', handleLogin);
+    loginCodeInput.addEventListener('keypress', e=>{ if(e.key==='Enter') handleLogin(); });
+    hrAdminBtn.addEventListener('click', promptHrAdmin);
+</script>
+</body>
+</html>
